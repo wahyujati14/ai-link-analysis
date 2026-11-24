@@ -168,7 +168,9 @@ async def fetch_and_extract(
     timeout_seconds: float = 15.0,
     max_chars: int = 12000,
 ) -> ExtractedWebsite:
-    current_url = validate_public_url(url)
+    initial_url = validate_public_url(url)
+    current_url = initial_url
+    redirected_to_login = False
     headers = {
         "User-Agent": USER_AGENT,
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -190,6 +192,11 @@ async def fetch_and_extract(
                         next_url = urljoin(current_url, location)
                         # Re-validate every hop so open redirects cannot pivot to internal IPs
                         current_url = validate_public_url(next_url)
+                        if any(
+                            p in current_url.lower()
+                            for p in ("/accounts/login", "/uas/login", "/login.php")
+                        ):
+                            redirected_to_login = True
                         continue
 
                     if resp.status_code >= 400:
@@ -226,12 +233,17 @@ async def fetch_and_extract(
         else:
             raise WebsiteFetchError("Too many HTTP redirects while fetching website.")
 
+    reported_url = initial_url if redirected_to_login else current_url
     extracted = parse_html_content(
         html=raw_html,
         requested_url=url,
-        final_url=current_url,
+        final_url=reported_url,
         max_chars=max_chars,
     )
+    if redirected_to_login:
+        extracted.structured_hints.insert(0, f"Public profile URL submitted: {initial_url}")
+        if not extracted.body_text:
+            extracted.body_text = f"Public social/brand profile URL: {initial_url}"
     if not (extracted.title or extracted.meta_description or extracted.body_text):
         raise WebsiteFetchError(
             "Website returned empty or client-only shell content with no readable text."

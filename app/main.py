@@ -2,6 +2,7 @@ import logging
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import Settings, get_settings
@@ -20,6 +21,13 @@ app = FastAPI(
     title="AI Website Link Analysis API",
     description="Extracts website content and generates brand, competitor, SEO, service, and audience insights.",
     version="1.0.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 _service_instance: AnalysisService | None = None
