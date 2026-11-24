@@ -29,6 +29,9 @@ def get_analysis_service(settings: Settings = Depends(get_settings)) -> Analysis
     global _service_instance
     if _service_instance is None:
         _service_instance = AnalysisService(settings=settings)
+    else:
+        _service_instance.settings = settings
+        _service_instance.llm.settings = settings
     return _service_instance
 
 
@@ -76,8 +79,11 @@ async def root() -> dict[str, str]:
 
 
 @app.get("/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok"}
+async def health(settings: Settings = Depends(get_settings)) -> dict[str, object]:
+    return {
+        "status": "ok",
+        "llm_configured": bool(settings.gemini_api_key or settings.openai_api_key),
+    }
 
 
 @app.post(
