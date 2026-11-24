@@ -240,7 +240,9 @@ class LLMAnalyzer:
         if not candidates:
             raise LLMServiceError("Gemini returned no candidates.")
         parts = candidates[0].get("content", {}).get("parts") or []
-        text = "".join(str(p.get("text", "")) for p in parts).strip()
+        text = "".join(
+            str(p.get("text", "")) for p in parts if not p.get("thought")
+        ).strip()
         if not text:
             raise LLMServiceError("Gemini returned an empty response body.")
         return text
