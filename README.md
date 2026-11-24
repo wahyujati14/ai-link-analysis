@@ -6,9 +6,9 @@ FastAPI service that fetches a public webpage, extracts its readable content and
 
 | Item | URL |
 |---|---|
-| Live Service | `https://<your-deployed-domain>` |
-| Analysis Endpoint | `https://<your-deployed-domain>/link-analysis` |
-| Interactive Docs (Swagger) | `https://<your-deployed-domain>/docs` |
+| Live Service | `https://ai-link-analysis-omega.vercel.app` |
+| Analysis Endpoint | `https://ai-link-analysis-omega.vercel.app/link-analysis` |
+| Interactive Docs (Swagger) | `https://ai-link-analysis-omega.vercel.app/docs` |
 
 ## Architecture & Processing Flow
 
