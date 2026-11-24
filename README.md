@@ -15,7 +15,7 @@ FastAPI service that fetches a public webpage, extracts its readable content and
 1. **URL & SSRF Validation (`app/utils/validators.py`)**: Normalizes `http`/`https` URLs, rejects embedded credentials and internal hostnames (`localhost`, `.local`, `.internal`), and resolves DNS records to block private, loopback, link-local, and cloud-metadata IP ranges (`127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.169.254`). Every HTTP redirect hop is re-validated before following.
 2. **HTML Extraction (`app/services/website_extractor.py`)**: Streams up to 2 MB of HTML, extracts `<title>`, meta/OpenGraph descriptions, JSON-LD organization hints, navigation labels, `h1`-`h3` headings, and deduplicated body copy while stripping `<script>`, `<style>`, `<svg>`, and form boilerplate. Body text is capped at `12,000` characters to keep token usage predictable.
 3. **Optional Competitor Grounding (`app/services/competitor_service.py`)**: When `SERPER_API_KEY` is set, queries Google search snippets for real competitor references and passes them into the prompt. Competitors backed by search hits are labeled `"source": "web_research"`; LLM-inferred competitors are explicitly labeled `"source": "ai_suggested"`.
-4. **LLM Structured Analysis (`app/services/llm_service.py`)**: Calls Google Gemini (`gemini-2.5-flash` by default) in JSON mode with automatic fallback to OpenAI (`gpt-4o-mini`) if configured.
+4. **LLM Structured Analysis (`app/services/llm_service.py`)**: Calls Google Gemini (`gemini-3.8-flash` by default) in JSON mode with automatic fallback to OpenAI (`gpt-4o-mini`) if configured.
 5. **Validation & Caching (`app/services/analysis_service.py`)**: Validates the output against Pydantic schemas (`app/schemas.py`) and caches completed analyses in an in-memory TTL LRU cache (`CACHE_TTL_SECONDS=3600`).
 
 ## Project Structure
@@ -315,10 +315,10 @@ curl -X POST http://localhost:4000/link-analysis \
 
 Pricing figures reflect published standard pay-as-you-go API rates per 1M tokens. Latency ranges below are **estimated** end-to-end generation times for a ~1,100-token structured JSON payload (~3,000 input tokens), not synthetic vendor marketing peaks.
 
-| Criteria | Google Gemini (`gemini-2.5-flash`) | OpenAI (`gpt-4o-mini`) | OpenAI (`gpt-4.1-mini`) | Anthropic (`claude-haiku-4-5`) |
+| Criteria | Google Gemini (`gemini-3.8-flash`) | OpenAI (`gpt-4o-mini`) | OpenAI (`gpt-4.1-mini`) | Anthropic (`claude-haiku-4-5`) |
 |---|---|---|---|---|
 | **Provider** | Google AI / Vertex | OpenAI | OpenAI | Anthropic |
-| **Model Name** | `gemini-2.5-flash` | `gpt-4o-mini` | `gpt-4.1-mini` | `claude-haiku-4-5` |
+| **Model Name** | `gemini-3.8-flash` | `gpt-4o-mini` | `gpt-4.1-mini` | `claude-haiku-4-5` |
 | **API Cost (Input / Output per 1M)** | \$0.30 / \$2.50 (Free tier available in AI Studio) | \$0.15 / \$0.60 | \$0.40 / \$1.60 | \$1.00 / \$5.00 |
 | **Response Speed (Est. for ~1.1K JSON)** | ~2.2s – 4.5s | ~3.0s – 5.5s | ~2.8s – 5.0s | ~2.5s – 4.8s |
 | **Accuracy (Web & SEO Synthesis)** | High; strong extraction fidelity on messy web text | Good; occasional generic phrasing on niche B2B sites | High; strong instruction adherence | High; nuanced marketing copy, pricier output |
@@ -328,7 +328,7 @@ Pricing figures reflect published standard pay-as-you-go API rates per 1M tokens
 
 ### B. Best Model Selection Rationale
 
-`gemini-2.5-flash` is selected as the primary model with `gpt-4o-mini` wired as an automatic fallback:
+`gemini-3.8-flash` is selected as the primary model with `gpt-4o-mini` wired as an automatic fallback:
 1. **Website Understanding & SEO Quality**: Produces specific positioning gaps, realistic long-tail keywords, and clean service descriptions grounded in page copy rather than generic templates.
 2. **Speed**: Consistently low time-to-first-token and high output throughput keep full `/link-analysis` latency interactive (~3–6 seconds including webpage fetch).
 3. **Structured JSON Reliability**: Native `responseMimeType: "application/json"` combined with server-side Pydantic validation (`LinkAnalysisResponse`) eliminates broken JSON responses.
@@ -343,12 +343,12 @@ Pricing figures reflect published standard pay-as-you-go API rates per 1M tokens
 
 ### D. Final LLM Recommendation Summary
 
-- **Recommended Provider & Model**: Google Gemini — `gemini-2.5-flash`
+- **Recommended Provider & Model**: Google Gemini — `gemini-3.8-flash`
 - **Fallback Provider & Model**: OpenAI — `gpt-4o-mini`
 - **Estimated Input Usage**: ~3,000 tokens per uncached webpage (cleaned metadata + headings + body text + system instructions)
 - **Estimated Output Usage**: ~1,100 tokens per structured 5-section response
 - **Estimated Cost per Analysis**:
-  - `gemini-2.5-flash` (paid tier): `(3,000 * $0.30 + 1,100 * $2.50) / 1,000,000` ≈ **\$0.00365 per website** (\$0.00 within AI Studio free tier limits)
+  - `gemini-3.8-flash` (paid tier): `(3,000 * $0.30 + 1,100 * $2.50) / 1,000,000` ≈ **\$0.00365 per website** (\$0.00 within AI Studio free tier limits)
   - `gpt-4o-mini` (fallback): `(3,000 * $0.15 + 1,100 * $0.60) / 1,000,000` ≈ **\$0.00111 per website**
 - **Expected End-to-End Response Time**: ~1.0s HTML fetch (measured locally on typical sites) + ~2.5s–4.5s LLM generation (estimated) = **~3.5s–5.5s uncached**, **<15ms cached**.
 

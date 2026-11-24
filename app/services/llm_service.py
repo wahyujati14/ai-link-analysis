@@ -216,7 +216,7 @@ class LLMAnalyzer:
         return available
 
     async def _call_gemini(self, user_prompt: str) -> str:
-        model = self.settings.gemini_model.strip() or "gemini-2.5-flash"
+        model = self.settings.gemini_model.strip() or "gemini-3.8-flash"
         endpoint = (
             f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
         )
