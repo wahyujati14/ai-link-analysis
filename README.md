@@ -10,6 +10,16 @@ FastAPI service that fetches a public webpage, extracts its readable content and
 | Analysis Endpoint | `https://ai-link-analysis-omega.vercel.app/link-analysis` |
 | Interactive Docs (Swagger) | `https://ai-link-analysis-omega.vercel.app/docs` |
 
+### Verified Execution Log (Production)
+
+```text
+POST https://ai-link-analysis-omega.vercel.app/link-analysis {"url": "http://127.0.0.1/admin"}
+-> HTTP 400 Bad Request (0.42s) | {"success": false, "error": "Invalid or restricted URL", "detail": "Access to private or reserved IP addresses is blocked."}
+
+POST https://ai-link-analysis-omega.vercel.app/link-analysis {"url": "https://linear.app"}
+-> HTTP 200 OK (7.35s) | Brand: Linear (Project Management Software) | Competitors: 3 (Jira, Asana, Monday.com) | Search Queries: 5 | Top Services: 5
+```
+
 ## Architecture & Processing Flow
 
 1. **URL & SSRF Validation (`app/utils/validators.py`)**: Normalizes `http`/`https` URLs, rejects embedded credentials and internal hostnames (`localhost`, `.local`, `.internal`), and resolves DNS records to block private, loopback, link-local, and cloud-metadata IP ranges (`127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.169.254`). Every HTTP redirect hop is re-validated before following.
